@@ -45,20 +45,20 @@ Vector2 normalise(float x, float y) {
 }
 
 
-void Raycast(float mouse_x,float mouse_y,float endX,float endY) {
+bool RaycastWithDDA(float mouse_x,float mouse_y,float endX,float endY) {
 
-    Vector2 rayStart{ mouse_x,mouse_y };
+    Vector2 rayStart{ mouse_x/30,mouse_y/30 };
     endX /= 30; endY /= 30;
-    rayStart.x /= 30; rayStart.y /= 30;
+    
 
-    Vector2 RayDirection = normalise((endX - mouse_x), (endY - mouse_y));
+    Vector2 RayDirection = normalise((mouse_x-endX), ( mouse_y-endY));
     //std::cout << "mouse: x:" << rayStart.x << "  y:" << rayStart.y << "end x:" << endX << "  y:" << endY << "   normalised x:" << RayDirection.x << "   Y:"<<RayDirection.y << "\n";
 
     Vector2 unitStepSize{
         //this vector contain the unit setp size (x,y) to the  direction vector
         //to find hypotenuse we are gonna multiply this thing with scalar units
-        std::sqrt(1 + (RayDirection.y / RayDirection.x) * (RayDirection.y / RayDirection.x)),
-        std::sqrt(1 + (RayDirection.x / RayDirection.y) * (RayDirection.x / RayDirection.y))
+        std::sqrt(1 + (RayDirection.y / std::abs(1 / RayDirection.x)) * (RayDirection.y / std::abs(1 / RayDirection.x))),
+        std::sqrt(1 + (RayDirection.x / std::abs(1 / RayDirection.y)) * (RayDirection.x / std::abs(1 / RayDirection.y)))
     };
 
     Vector2 MapCheck{ (int)rayStart.x,(int)rayStart.y };//this is used as the current working cell-------+++++++++++++++++++++++++++++++++++++++++++++++++++++----->here some corretion to make thigs in 123 order and we need floatng point to get the relative position//done i guess
@@ -85,7 +85,7 @@ void Raycast(float mouse_x,float mouse_y,float endX,float endY) {
         //calculating rhe relative position of the player wth respect to the cell;
         // here we are multiplying the unit vec with the scalar to get the hypotenuse
         // and storing it in the raylength vector
-        RayLength1d.x = (-rayStart.x + float(MapCheck.x) * unitStepSize.x);
+        RayLength1d.x = (float(MapCheck.x+1) - rayStart.x) * unitStepSize.x;
     }
     if (RayDirection.y < 0)
     {
@@ -101,16 +101,16 @@ void Raycast(float mouse_x,float mouse_y,float endX,float endY) {
         //calculating rhe relative position of the player wth respect to the cell;
         // here we are multiplying the unit vec with the scalar to get the hypotenuse
         // and storing it in the raylength vector
-        RayLength1d.y = (-rayStart.y + float(MapCheck.y) * unitStepSize.y);
+        RayLength1d.y = ( float(MapCheck.y+1) - rayStart.y )* unitStepSize.y;
     }
     bool Tilefound = 0;
     float maxDistance = 100.0f;
     float Distance = 0;
 
     //std::cout << "raylengt:" << RayLength1d.x << "  y:" << RayLength1d.y << '\n';
-    int i = 0;
+    //int i = 0;
 
-    while (!Tilefound && Distance < maxDistance)
+    while (!Tilefound and Distance < maxDistance)
     {   //walk  
 
         if (RayLength1d.x < RayLength1d.y)
@@ -130,22 +130,46 @@ void Raycast(float mouse_x,float mouse_y,float endX,float endY) {
         {
             if (grids[MapCheck.x + MapCheck.y * numOfCellX].type == 1)//and here is the main step to check  this also need correction           cor
             {
+                
+                grids[MapCheck.x + MapCheck.y * numOfCellX].Color= PURPLE;
                 Tilefound = 1;
+                
 
+            }
+            else { Tilefound = 0;// grids[MapCheck.x + MapCheck.y * numOfCellX].Color = DARKPURPLE;
             }
 
         }
+        
     }
 
-    i += 1;
+   // i += 1;
     if (Tilefound)
     {
-        std::cout << "tile Found    x:"<< MapCheck.x<<"   i :"<<i <<"  y:"<< MapCheck.y<<'\n';
+        std::cout << "tile Found    x:"<< MapCheck.x<<"  y:"<< MapCheck.y<<'\n';
         intersection.x = rayStart.x+ RayDirection.x * Distance;
         intersection.y = rayStart.y + RayDirection.y * Distance;
+        //intersection.x = (MapCheck.x)*30; intersection.y = (MapCheck.y)*30;
     }
 
+    return Tilefound;
 
+}
+
+
+bool RaycastWithsnoAlgo(float mouse_x, float mouse_y, float endX, float endY) 
+{   
+    Vector2 RayDirection = normalise((mouse_x - endX), (mouse_y - endY));
+    bool TileFound = 0;
+    float distance = 1;
+    float madistance = 100;
+    while (!TileFound || distance<madistance  )
+    {
+        
+        RayDirection.x *= distance;
+        distance += 1;
+    }
+    return false;
 
 }
 int main() {
@@ -182,7 +206,7 @@ int main() {
 
  
         
-         Raycast(mouse_x, mouse_y, endX, endY);
+         
 
         
      
@@ -200,10 +224,10 @@ int main() {
                 DrawCircle(mouse_x, mouse_y, 10, GREEN);//player
                 DrawCircle(endX, endY, 10, ORANGE);// ending postion
 
-                if(IsKeyDown(KEY_W)) {endY -= 0.05;}
-                if (IsKeyDown(KEY_S)){endY += 0.05;}
-                if (IsKeyDown(KEY_A)){endX -= 0.05;}
-                if (IsKeyDown(KEY_D)){endX += 0.05;}
+                if(IsKeyDown(KEY_W)) {endY -= 0.03;}
+                if (IsKeyDown(KEY_S)){endY += 0.03;}
+                if (IsKeyDown(KEY_A)){endX -= 0.03;}
+                if (IsKeyDown(KEY_D)){endX += 0.03;}
                 if (endX < 0) { endX = 0; };
                 if (endY < 0) { endY = 0; }
                 if (endX >= 600) { endX = 600; }
@@ -212,7 +236,7 @@ int main() {
                 if ((mouse_x >= x && mouse_x <= x + cellSize) && (mouse_y >= y && mouse_y <= y + cellSize))
                 {
                    
-                    if (IsMouseButtonReleased(1)) {
+                    if (IsMouseButtonDown(1)) {// changes the color and type of all cell based on user input;
                         grids[(x / cellSize) + (y/ cellSize) * numOfCellY].type = !grids[(x/ cellSize) + (y/ cellSize) * numOfCellY].type;
                         if (grids[(x/ cellSize) + (y/ cellSize) * numOfCellY].type == 0) { grids[(x / cellSize) + (y / cellSize) * numOfCellY].Color = GRAY; }
                         else if (grids[(x / cellSize) + (y / cellSize) * numOfCellY].type == 1) { grids[(x / cellSize) + (y/ cellSize) * numOfCellY].Color = DARKPURPLE; }
@@ -225,20 +249,24 @@ int main() {
 
 
 
-                DrawRectangle(x, y, cellSize - 1, cellSize - 1, grids[(x / cellSize) + (y / cellSize) * numOfCellY].Color);
+                DrawRectangle(x, y, cellSize - 1, cellSize - 1, grids[(x / cellSize) + (y / cellSize) * numOfCellY].Color);//Draws all the Rectangle
+
+
+
                 if (setStart && setEnd)
                 {
                
                     if (IsMouseButtonDown(0)) {
+                        bool found =RaycastWithDDA(mouse_x, mouse_y, endX, endY);
                         DrawLine(mouse_x, mouse_y, endX, endY, BLUE);
                         //std::cout << "mouse Postion x:" << mouse_x << "  Y:" << mouse_y << "  endx:" << endX << "   endY:" << endY << '\n';
-                        /*if (Tilefound)
+                        if (found)
                         {
                             DrawCircleV(intersection, 5, ORANGE);
-                            std::cout << intersection.x << " " << intersection.y << '\n';
+                            //std::cout << intersection.x << " " << intersection.y << '\n';
 
 
-                        }*/
+                        }
                     }
                 }
             }
