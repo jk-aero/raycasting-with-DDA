@@ -45,6 +45,109 @@ Vector2 normalise(float x, float y) {
 }
 
 
+void Raycast(float mouse_x,float mouse_y,float endX,float endY) {
+
+    Vector2 rayStart{ mouse_x,mouse_y };
+    endX /= 30; endY /= 30;
+    rayStart.x /= 30; rayStart.y /= 30;
+
+    Vector2 RayDirection = normalise((endX - mouse_x), (endY - mouse_y));
+    //std::cout << "mouse: x:" << rayStart.x << "  y:" << rayStart.y << "end x:" << endX << "  y:" << endY << "   normalised x:" << RayDirection.x << "   Y:"<<RayDirection.y << "\n";
+
+    Vector2 unitStepSize{
+        //this vector contain the unit setp size (x,y) to the  direction vector
+        //to find hypotenuse we are gonna multiply this thing with scalar units
+        std::sqrt(1 + (RayDirection.y / RayDirection.x) * (RayDirection.y / RayDirection.x)),
+        std::sqrt(1 + (RayDirection.x / RayDirection.y) * (RayDirection.x / RayDirection.y))
+    };
+
+    Vector2 MapCheck{ (int)rayStart.x,(int)rayStart.y };//this is used as the current working cell-------+++++++++++++++++++++++++++++++++++++++++++++++++++++----->here some corretion to make thigs in 123 order and we need floatng point to get the relative position//done i guess
+    //std::cout << "    x:" << MapCheck.x << "   y : " << MapCheck.y<< "\n";
+
+    Vector2 RayLength1d;//stores the length of hypotenuse x and y correspondingly
+    //which we got by multiplying wth unitStepSize
+
+
+    Vector2 Step;//to change the direction based on angle (ie to go up or down)
+
+    if (RayDirection.x < 0)
+    {
+        Step.x = -1;
+        //calculating rhe relative position of the player wth respect to the cell;
+        // here we are multiplying the unit vec with the scalar to get the hypotenuse
+        // and storing it in the raylength vector
+        RayLength1d.x = (rayStart.x - float(MapCheck.x) * unitStepSize.x);//----------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-multiplying the relative value with unit vec to get the hypotenuse
+
+    }
+    else
+    {
+        Step.x = 1;
+        //calculating rhe relative position of the player wth respect to the cell;
+        // here we are multiplying the unit vec with the scalar to get the hypotenuse
+        // and storing it in the raylength vector
+        RayLength1d.x = (-rayStart.x + float(MapCheck.x) * unitStepSize.x);
+    }
+    if (RayDirection.y < 0)
+    {
+        Step.y = -1;
+        //calculating rhe relative position of the player wth respect to the cell;
+        // here we are multiplying the unit vec with the scalar to get the hypotenuse
+        // and storing it in the raylength vector
+        RayLength1d.y = (rayStart.y - float(MapCheck.y) * unitStepSize.y);
+    }
+    else
+    {
+        Step.y = 1;
+        //calculating rhe relative position of the player wth respect to the cell;
+        // here we are multiplying the unit vec with the scalar to get the hypotenuse
+        // and storing it in the raylength vector
+        RayLength1d.y = (-rayStart.y + float(MapCheck.y) * unitStepSize.y);
+    }
+    bool Tilefound = 0;
+    float maxDistance = 100.0f;
+    float Distance = 0;
+
+    //std::cout << "raylengt:" << RayLength1d.x << "  y:" << RayLength1d.y << '\n';
+    int i = 0;
+
+    while (!Tilefound && Distance < maxDistance)
+    {   //walk  
+
+        if (RayLength1d.x < RayLength1d.y)
+        {
+            MapCheck.x += Step.x;//moves to rhe next cell or stores that we  go to next cell
+            Distance = RayLength1d.x;
+            RayLength1d.x += unitStepSize.x;
+
+
+        }
+        else {
+            MapCheck.y += Step.y;//moves to rhe next cell or stores that we  go to next cell
+            Distance = RayLength1d.y;
+            RayLength1d.y += unitStepSize.y;
+        }
+        if (MapCheck.x >= 0 && MapCheck.x < numOfCellX && MapCheck.y >= 0 && MapCheck.y < numOfCellY)
+        {
+            if (grids[MapCheck.x + MapCheck.y * numOfCellX].type == 1)//and here is the main step to check  this also need correction           cor
+            {
+                Tilefound = 1;
+
+            }
+
+        }
+    }
+
+    i += 1;
+    if (Tilefound)
+    {
+        std::cout << "tile Found    x:"<< MapCheck.x<<"   i :"<<i <<"  y:"<< MapCheck.y<<'\n';
+        intersection.x = rayStart.x+ RayDirection.x * Distance;
+        intersection.y = rayStart.y + RayDirection.y * Distance;
+    }
+
+
+
+}
 int main() {
 
     // Initialization
